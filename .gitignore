@@ -1,0 +1,52 @@
+# Compiled binaries
+/target/
+
+# Debug builds
+debug/
+
+# Test data directories
+/test_data/
+/test_custom_data/
+/bench_data/
+/data/
+
+# Backup files
+*.bak
+*.tmp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Runtime files
+*.pid
+*.sock
+
+# Cargo lock file (included for applications)
+# Cargo.lock
+
+# Local environment files
+.env
+.env.local
+
+# Documentation build
+/docs/book/
+
+# Coverage reports
+tarpaulin-report.html
+cobertura.xml
