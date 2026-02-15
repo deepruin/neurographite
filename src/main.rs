@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     
     // Start API server
     let server = api::Server::new(db);
-    server.run("127.0.0.1:8080").await?;
+    server.run("127.0.0.1:8888").await?;
     
     Ok(())
 }

@@ -325,7 +325,7 @@
     <div id="api-endpoint">
         <div class="endpoint-status">
             <div class="status-dot" id="connection-status"></div>
-            <span id="endpoint-url">ws://localhost:8080</span>
+            <span id="endpoint-url">http://localhost:8888</span>
         </div>
         <div class="network-stats">
             <div>Nodes: <span id="node-count">0</span></div>
@@ -340,7 +340,7 @@
         // =============================================================================
 
         class NeurographiteClient {
-            constructor(baseUrl = 'http://localhost:8080') {
+            constructor(baseUrl = 'http://localhost:8888') {
                 this.baseUrl = baseUrl;
                 this.nodes = new Map();
                 this.connections = [];
