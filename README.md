@@ -101,6 +101,56 @@ curl http://localhost:8080/nodes/{uuid}/network-effect
 curl http://localhost:8080/stats
 ```
 
+## 🔥 Pulse Query Language
+
+**Pulse** is NeuroGraphite's native query language designed for neuromorphic hypergraph intelligence. Unlike traditional query languages, Pulse treats queries as **neural activations** that propagate through the network.
+
+### Basic Syntax
+```pulse
+SPIKE influence FROM "Sam Altman"
+THROUGH network(depth=3, decay=0.1)
+WHERE node_type = "company" 
+COLLECT activated_nodes
+RETURN name, activation_strength
+ORDER BY activation_strength DESC
+```
+
+### Core Operations
+
+- **SPIKE** - Initiate neural activation at specific nodes
+- **THROUGH** - Define propagation rules (depth, decay, thresholds)  
+- **WHERE** - Filter conditions during propagation
+- **COLLECT** - Gather results (nodes, paths, timing, cascades)
+- **RETURN** - Format final output
+
+### Advanced Features
+
+**Temporal Dynamics:**
+```pulse  
+SPIKE signal FROM "breaking_news"
+THROUGH network(refractory=500ms)
+COLLECT propagation_paths, timing_data
+RETURN path, activation_time, cascade_depth
+```
+
+**Multi-Source Analysis:**
+```pulse
+SPIKE activation FROM ["OpenAI", "Anthropic", "DeepMind"]  
+THROUGH network PARALLEL
+COLLECT cascade_effects
+RETURN combined_influence, network_effects
+```
+
+**Learning Integration:**
+```pulse
+TRAIN network ON historical_events
+WHERE outcome = "successful"
+USING gradient_descent(learning_rate=0.01)
+RETURN weight_updates
+```
+
+For complete documentation, see [PULSE.md](PULSE.md).
+
 ## 🧬 Neural Processing
 
 ### Spiking Mechanism
