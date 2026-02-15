@@ -234,6 +234,127 @@
             border-radius: 6px;
             margin-top: 10px;
         }
+
+        /* Pulse Query Interface Styles */
+        .pulse-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        .pulse-editor {
+            flex: 1;
+            min-height: 200px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: #f0f6fc;
+            padding: 12px;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        .pulse-controls {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            align-items: center;
+        }
+
+        .pulse-controls button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .query-examples {
+            margin-bottom: 10px;
+        }
+
+        .query-examples select {
+            width: 100%;
+            padding: 8px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            color: #f0f6fc;
+        }
+
+        .pulse-results {
+            flex: 1;
+            background: rgba(10, 25, 40, 0.8);
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+
+        .pulse-results .result-header {
+            color: #4af;
+            font-weight: bold;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 4px;
+        }
+
+        .pulse-results .result-row {
+            margin: 4px 0;
+            padding: 4px 8px;
+            background: rgba(68, 170, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .pulse-results .result-meta {
+            color: #6a737d;
+            font-size: 11px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #30363d;
+        }
+
+        /* Syntax highlighting for Pulse */
+        .pulse-editor {
+            background: #0d1117;
+        }
+
+        .pulse-keyword { color: #ff7b72; font-weight: bold; }
+        .pulse-string { color: #a5d6ff; }
+        .pulse-number { color: #79c0ff; }
+        .pulse-comment { color: #6a737d; font-style: italic; }
+        .pulse-function { color: #d2a8ff; }
+        .pulse-operator { color: #ff7b72; }
+
+        .query-history {
+            max-height: 100px;
+            overflow-y: auto;
+            background: rgba(10, 25, 40, 0.5);
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+
+        .history-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #30363d;
+            font-size: 12px;
+            font-family: monospace;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(68, 170, 255, 0.2);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
@@ -250,6 +371,7 @@
             <div class="tabs">
                 <button class="tab active" data-tab="add-node">Add Node</button>
                 <button class="tab" data-tab="connect">Connect</button>
+                <button class="tab" data-tab="pulse">Pulse</button>
                 <button class="tab" data-tab="query">Query</button>
                 <button class="tab" data-tab="explore">Explore</button>
             </div>
@@ -293,6 +415,72 @@
                     <span id="strength-value">0.7</span>
                 </div>
                 <button onclick="connectNodes()">Create Connection</button>
+            </div>
+
+            <!-- Pulse Query Tab -->
+            <div id="pulse" class="tab-content">
+                <div class="pulse-container">
+                    <div class="query-examples">
+                        <label for="example-queries">Example Queries:</label>
+                        <select id="example-queries" onchange="loadExampleQuery()">
+                            <option value="">Select an example...</option>
+                            <option value="basic">Basic Influence Propagation</option>
+                            <option value="cascade">Temporal Cascade Analysis</option>
+                            <option value="multi-source">Multi-Source Network Effects</option>
+                            <option value="hypergraph">Hypergraph Pattern Discovery</option>
+                            <option value="learning">Learning Pattern Analysis</option>
+                            <option value="simulation">Simulation Mode</option>
+                        </select>
+                    </div>
+                    
+                    <textarea 
+                        id="pulse-editor" 
+                        class="pulse-editor" 
+                        placeholder="Write your Pulse query here...
+
+Examples:
+
+SPIKE influence FROM &quot;Sam Altman&quot;
+THROUGH network(depth=3, decay=0.1)
+WHERE node_type = &quot;company&quot;
+COLLECT activated_nodes
+RETURN name, activation_strength
+ORDER BY activation_strength DESC
+
+SPIKE signal FROM &quot;breaking_news&quot;
+THROUGH network(refractory=500ms)
+COLLECT propagation_paths, timing_data
+RETURN path, activation_time, cascade_depth"
+                        spellcheck="false">
+SPIKE influence FROM "startup_founder"
+THROUGH network(depth=2)
+WHERE node_type = "investor"
+RETURN name, activation_strength
+                    </textarea>
+                    
+                    <div class="pulse-controls">
+                        <button onclick="executePulseQuery()" id="execute-btn">Execute Query</button>
+                        <button onclick="explainPulseQuery()">Explain</button>
+                        <button onclick="formatPulseQuery()">Format</button>
+                        <button onclick="clearPulseQuery()">Clear</button>
+                        <button onclick="toggleQueryHistory()">History</button>
+                    </div>
+                    
+                    <div id="query-history" class="query-history" style="display: none;">
+                        <div class="history-item" onclick="loadQueryFromHistory(this)">
+                            SPIKE influence FROM "Elon Musk" THROUGH network(depth=3) RETURN name
+                        </div>
+                    </div>
+                    
+                    <div id="pulse-results" class="pulse-results">
+                        <div class="result-header">Results will appear here...</div>
+                        <div style="color: #6a737d; font-size: 11px; margin-top: 10px;">
+                            ⚡ Pulse Query Language - Neural activation syntax for influence propagation<br>
+                            📚 Syntax: SPIKE → THROUGH → WHERE → COLLECT → RETURN<br>
+                            🔥 Example: Try the "Basic Influence Propagation" example above
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Query Tab -->
@@ -609,6 +797,304 @@
             // TODO: Implement when we have a list nodes endpoint
             showMessage('Node list endpoint not yet implemented', 'error');
         };
+
+        // =============================================================================
+        // PULSE QUERY FUNCTIONS
+        // =============================================================================
+
+        const queryHistory = [];
+        const maxHistorySize = 20;
+
+        const exampleQueries = {
+            basic: `SPIKE influence FROM "Sam Altman"
+THROUGH network(depth=3, decay=0.1)
+WHERE node_type = "company"
+COLLECT activated_nodes
+RETURN name, activation_strength
+ORDER BY activation_strength DESC
+LIMIT 10`,
+            cascade: `SPIKE signal FROM "breaking_news"
+THROUGH network(refractory=500ms)
+WHERE event_type = "response"
+COLLECT propagation_paths, timing_data
+RETURN path, activation_time, cascade_depth
+ORDER BY activation_time ASC`,
+            "multi-source": `SPIKE activation FROM ["OpenAI", "Anthropic", "DeepMind"]
+THROUGH network PARALLEL
+WHERE node_type = "researcher"
+COLLECT cascade_effects
+RETURN node_id, combined_influence, source_contributions`,
+            hypergraph: `SPIKE interest FROM "AI Safety"
+THROUGH hyperedges(size>=3)
+WHERE relationship_type = "research_collaboration"
+COLLECT activated_nodes, hyperedge_data
+RETURN participants, collaboration_strength, research_area`,
+            learning: `SPIKE query FROM "venture_capital"
+THROUGH network(learning=true)
+WHERE successful_investment = true
+COLLECT weight_updates, pattern_changes
+RETURN edge_id, old_weight, new_weight, learning_rate`,
+            simulation: `SIMULATE SPIKE influence FROM "new_startup"
+THROUGH network(depth=5)
+WHERE funding_stage = "series_a"
+RETURN predicted_activations, confidence_scores`
+        };
+
+        window.loadExampleQuery = function() {
+            const select = document.getElementById('example-queries');
+            const editor = document.getElementById('pulse-editor');
+            
+            if (select.value && exampleQueries[select.value]) {
+                editor.value = exampleQueries[select.value];
+                applySyntaxHighlighting();
+            }
+        };
+
+        window.executePulseQuery = async function() {
+            const query = document.getElementById('pulse-editor').value.trim();
+            const resultsDiv = document.getElementById('pulse-results');
+            
+            if (!query) {
+                showPulseError('Please enter a Pulse query');
+                return;
+            }
+
+            // Add to history
+            addQueryToHistory(query);
+            
+            try {
+                showPulseStatus('Executing Pulse query...');
+                
+                // For now, simulate the API call since backend doesn't have Pulse parser yet
+                const result = await simulatePulseQuery(query);
+                showPulseResults(result, query);
+                
+            } catch (error) {
+                showPulseError(`Query execution failed: ${error.message}`);
+            }
+        };
+
+        window.explainPulseQuery = function() {
+            const query = document.getElementById('pulse-editor').value.trim();
+            
+            if (!query) {
+                showPulseError('Please enter a query to explain');
+                return;
+            }
+            
+            const explanation = generateQueryExplanation(query);
+            showPulseResults({ explanation: true, text: explanation }, query);
+        };
+
+        window.formatPulseQuery = function() {
+            const editor = document.getElementById('pulse-editor');
+            const query = editor.value.trim();
+            
+            if (!query) return;
+            
+            // Basic formatting - add proper indentation and line breaks
+            const formatted = formatPulseQueryText(query);
+            editor.value = formatted;
+            applySyntaxHighlighting();
+        };
+
+        window.clearPulseQuery = function() {
+            document.getElementById('pulse-editor').value = '';
+            document.getElementById('pulse-results').innerHTML = `
+                <div class="result-header">Results cleared</div>
+                <div style="color: #6a737d; font-size: 11px; margin-top: 10px;">
+                    Ready for your next Pulse query...
+                </div>
+            `;
+        };
+
+        window.toggleQueryHistory = function() {
+            const historyDiv = document.getElementById('query-history');
+            if (historyDiv.style.display === 'none') {
+                updateQueryHistoryDisplay();
+                historyDiv.style.display = 'block';
+            } else {
+                historyDiv.style.display = 'none';
+            }
+        };
+
+        window.loadQueryFromHistory = function(element) {
+            const query = element.textContent.trim();
+            document.getElementById('pulse-editor').value = query;
+            document.getElementById('query-history').style.display = 'none';
+            applySyntaxHighlighting();
+        };
+
+        // Helper functions for Pulse interface
+        function showPulseResults(result, query) {
+            const resultsDiv = document.getElementById('pulse-results');
+            let html = '';
+            
+            if (result.explanation) {
+                html = `
+                    <div class="result-header">Query Explanation</div>
+                    <div style="color: #a5d6ff; margin: 10px 0; line-height: 1.6;">
+                        ${result.text}
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="result-header">Query Results</div>
+                    <div class="result-row">
+                        <strong>Query:</strong> ${query.split('\\n')[0]}...
+                    </div>
+                `;
+                
+                if (result.nodes) {
+                    result.nodes.forEach((node, i) => {
+                        html += `
+                            <div class="result-row">
+                                ${i + 1}. <strong>${node.name}</strong> 
+                                (strength: ${node.activation_strength?.toFixed(3) || 'N/A'})
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += `
+                    <div class="result-meta">
+                        Execution time: ${result.execution_time || '0.12s'} | 
+                        Nodes activated: ${result.nodes?.length || 0} |
+                        Network effects: ${result.cascade_depth || 0} levels
+                    </div>
+                `;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function showPulseStatus(message) {
+            const resultsDiv = document.getElementById('pulse-results');
+            resultsDiv.innerHTML = `
+                <div class="result-header">Status</div>
+                <div style="color: #79c0ff;">${message}</div>
+            `;
+        }
+
+        function showPulseError(message) {
+            const resultsDiv = document.getElementById('pulse-results');
+            resultsDiv.innerHTML = `
+                <div class="result-header">Error</div>
+                <div style="color: #ff7b72;">${message}</div>
+            `;
+        }
+
+        function addQueryToHistory(query) {
+            if (!query || query.length < 10) return;
+            
+            // Remove duplicates and add to beginning
+            const index = queryHistory.indexOf(query);
+            if (index > -1) queryHistory.splice(index, 1);
+            
+            queryHistory.unshift(query);
+            
+            // Keep only last N queries
+            if (queryHistory.length > maxHistorySize) {
+                queryHistory.splice(maxHistorySize);
+            }
+            
+            updateQueryHistoryDisplay();
+        }
+
+        function updateQueryHistoryDisplay() {
+            const historyDiv = document.getElementById('query-history');
+            
+            if (queryHistory.length === 0) {
+                historyDiv.innerHTML = '<div style="padding: 10px; color: #6a737d;">No query history</div>';
+                return;
+            }
+            
+            let html = '';
+            queryHistory.forEach(query => {
+                const shortQuery = query.length > 60 ? query.substring(0, 60) + '...' : query;
+                html += `<div class="history-item" onclick="loadQueryFromHistory(this)">${shortQuery}</div>`;
+            });
+            
+            historyDiv.innerHTML = html;
+        }
+
+        // Simulate Pulse query execution (until backend implements parser)
+        async function simulatePulseQuery(query) {
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+            
+            // Parse query to extract key information
+            const isSimulation = query.includes('SIMULATE');
+            const hasLimit = query.match(/LIMIT (\\d+)/i);
+            const limit = hasLimit ? parseInt(hasLimit[1]) : 5;
+            
+            // Generate realistic mock results
+            const sampleNodes = ['Sam Altman', 'Elon Musk', 'Dario Amodei', 'Demis Hassabis', 'OpenAI', 'Anthropic', 'DeepMind', 'Tesla', 'SpaceX'];
+            const results = [];
+            
+            for (let i = 0; i < Math.min(limit, sampleNodes.length); i++) {
+                results.push({
+                    name: sampleNodes[i],
+                    activation_strength: Math.random() * 0.8 + 0.2,
+                    cascade_depth: Math.floor(Math.random() * 4) + 1
+                });
+            }
+            
+            results.sort((a, b) => b.activation_strength - a.activation_strength);
+            
+            return {
+                nodes: results,
+                execution_time: (Math.random() * 2 + 0.1).toFixed(2) + 's',
+                cascade_depth: Math.floor(Math.random() * 5) + 1
+            };
+        }
+
+        function generateQueryExplanation(query) {
+            let explanation = 'This Pulse query performs the following operations:\\n\\n';
+            
+            if (query.includes('SPIKE')) {
+                explanation += '🔥 <strong>SPIKE</strong> - Initiates neural activation at specified nodes\\n';
+            }
+            if (query.includes('THROUGH')) {
+                explanation += '🌐 <strong>THROUGH</strong> - Defines how activation propagates through the network\\n';
+            }
+            if (query.includes('WHERE')) {
+                explanation += '🔍 <strong>WHERE</strong> - Applies filters during propagation\\n';
+            }
+            if (query.includes('COLLECT')) {
+                explanation += '📊 <strong>COLLECT</strong> - Gathers results during network traversal\\n';
+            }
+            if (query.includes('RETURN')) {
+                explanation += '📤 <strong>RETURN</strong> - Formats the final output\\n';
+            }
+            
+            explanation += '\\nThis represents a neuromorphic approach to querying influence networks, where queries trigger neural-like activations that cascade through connected nodes.';
+            
+            return explanation;
+        }
+
+        function formatPulseQueryText(query) {
+            return query
+                .replace(/\\s+/g, ' ')
+                .replace(/(SPIKE|THROUGH|WHERE|COLLECT|RETURN|ORDER BY|LIMIT)/g, '\\n$1')
+                .replace(/\\n\\s+/g, '\\n')
+                .trim();
+        }
+
+        function applySyntaxHighlighting() {
+            // Basic syntax highlighting could be added here
+            // For now, this is a placeholder for future enhancement
+        }
+
+        // Initialize Pulse interface
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for Enter key in Pulse editor (Ctrl+Enter to execute)
+            document.getElementById('pulse-editor').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    executePulseQuery();
+                }
+            });
+        });
 
         window.getStats = async function() {
             try {
