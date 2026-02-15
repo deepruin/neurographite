@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurographite - Live Network Intelligence</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #000810;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #fff;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            max-width: 400px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: #4af;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(68, 170, 255, 0.5);
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #688;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #9ab;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(20, 40, 60, 0.8);
+            border: 1px solid rgba(68, 170, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: rgba(68, 170, 255, 0.8);
+            box-shadow: 0 0 20px rgba(68, 170, 255, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #2a6090, #4a90c0);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #3a70a0, #5aa0d0);
+            box-shadow: 0 0 25px rgba(68, 170, 255, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(10, 25, 40, 0.7);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #6a9;
+            min-height: 60px;
+        }
+
+        #api-endpoint {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 25, 40, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+            font-size: 0.8rem;
+        }
+
+        .endpoint-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f44;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .status-dot.connected {
+            background: #4f4;
+            color: #4f4;
+        }
+
+        .network-stats {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #89a;
+        }
+
+        #controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid rgba(68, 170, 255, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            color: #89a;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-right: 0;
+            margin-bottom: 0;
+        }
+
+        .tab.active {
+            color: #4af;
+            border-bottom-color: #4af;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .node-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(10, 20, 35, 0.5);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .node-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: rgba(20, 40, 60, 0.6);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .node-item:hover {
+            background: rgba(68, 170, 255, 0.2);
+        }
+
+        .node-item .node-id {
+            font-family: monospace;
+            color: #4af;
+            margin-bottom: 4px;
+        }
+
+        .error-message {
+            color: #f84;
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: #4f8;
+            background: rgba(68, 255, 68, 0.1);
+            border: 1px solid rgba(68, 255, 68, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="ui-overlay">
+        <h1>Neurographite</h1>
+        <p class="subtitle">
+            Live neuromorphic hypergraph database with spiking neural processing.
+            Create nodes, connect them, and watch network effects emerge in real-time.
+        </p>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" data-tab="add-node">Add Node</button>
+                <button class="tab" data-tab="connect">Connect</button>
+                <button class="tab" data-tab="query">Query</button>
+                <button class="tab" data-tab="explore">Explore</button>
+            </div>
+
+            <!-- Add Node Tab -->
+            <div id="add-node" class="tab-content active">
+                <div class="form-group">
+                    <label for="node-name">Node Name:</label>
+                    <input type="text" id="node-name" placeholder="e.g., Alice, Bitcoin Expert">
+                </div>
+                <div class="form-group">
+                    <label for="node-type">Type:</label>
+                    <select id="node-type">
+                        <option value="person">Person</option>
+                        <option value="goal">Goal</option>
+                        <option value="resource">Resource</option>
+                        <option value="skill">Skill</option>
+                        <option value="opportunity">Opportunity</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="node-description">Description:</label>
+                    <textarea id="node-description" placeholder="Describe this node's goals, skills, or characteristics..."></textarea>
+                </div>
+                <button onclick="addNode()">Add Node</button>
+            </div>
+
+            <!-- Connect Nodes Tab -->
+            <div id="connect" class="tab-content">
+                <div class="form-group">
+                    <label for="connect-nodes">Node IDs (comma-separated):</label>
+                    <input type="text" id="connect-nodes" placeholder="uuid1, uuid2, uuid3">
+                </div>
+                <div class="form-group">
+                    <label for="relationship">Relationship:</label>
+                    <input type="text" id="relationship" placeholder="e.g., collaboration, shared_interest, mentorship">
+                </div>
+                <div class="form-group">
+                    <label for="strength">Strength (0-1):</label>
+                    <input type="range" id="strength" min="0" max="1" step="0.1" value="0.7">
+                    <span id="strength-value">0.7</span>
+                </div>
+                <button onclick="connectNodes()">Create Connection</button>
+            </div>
+
+            <!-- Query Tab -->
+            <div id="query" class="tab-content">
+                <div class="form-group">
+                    <label for="query-node">Node ID:</label>
+                    <input type="text" id="query-node" placeholder="Node UUID to query">
+                </div>
+                <div class="form-group">
+                    <label for="activation-strength">Activation Strength:</label>
+                    <input type="range" id="activation-strength" min="0" max="1" step="0.1" value="1.0">
+                    <span id="activation-value">1.0</span>
+                </div>
+                <button onclick="findSimilar()">Find Similar</button>
+                <button onclick="simulateNetworkEffect()">Network Effect</button>
+                <button onclick="discoverRelationships()">Discover Relationships</button>
+            </div>
+
+            <!-- Explore Tab -->
+            <div id="explore" class="tab-content">
+                <button onclick="refreshNodes()">Refresh Nodes</button>
+                <button onclick="getStats()">Get Stats</button>
+                <div id="node-list" class="node-list"></div>
+            </div>
+        </div>
+
+        <div id="status">Ready. Backend: Neurographite v0.1.0</div>
+    </div>
+
+    <div id="api-endpoint">
+        <div class="endpoint-status">
+            <div class="status-dot" id="connection-status"></div>
+            <span id="endpoint-url">ws://localhost:8080</span>
+        </div>
+        <div class="network-stats">
+            <div>Nodes: <span id="node-count">0</span></div>
+            <div>Edges: <span id="edge-count">0</span></div>
+            <div>Active Neurons: <span id="active-neurons">0</span></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // =============================================================================
+        // NEUROGRAPHITE FRONTEND - CONNECTS TO RUST BACKEND
+        // =============================================================================
+
+        class NeurographiteClient {
+            constructor(baseUrl = 'http://localhost:8080') {
+                this.baseUrl = baseUrl;
+                this.nodes = new Map();
+                this.connections = [];
+                this.wsUrl = baseUrl.replace('http', 'ws');
+            }
+
+            async request(method, endpoint, data = null) {
+                try {
+                    const options = {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    };
+
+                    if (data) {
+                        options.body = JSON.stringify(data);
+                    }
+
+                    const response = await fetch(this.baseUrl + endpoint, options);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error('API Request failed:', error);
+                    throw error;
+                }
+            }
+
+            // API Methods
+            async addNode(data, nodeType = 'generic') {
+                return await this.request('POST', '/nodes', {
+                    data,
+                    node_type: nodeType
+                });
+            }
+
+            async connectNodes(nodeIds, relationship, strength) {
+                return await this.request('POST', '/edges', {
+                    node_ids: nodeIds,
+                    relationship,
+                    strength
+                });
+            }
+
+            async findSimilar(nodeId, threshold = 0.5) {
+                return await this.request('GET', `/nodes/${nodeId}/similar`);
+            }
+
+            async simulateNetworkEffect(nodeId) {
+                return await this.request('GET', `/nodes/${nodeId}/network-effect`);
+            }
+
+            async discoverRelationships() {
+                return await this.request('GET', '/relationships');
+            }
+
+            async getStats() {
+                return await this.request('GET', '/stats');
+            }
+
+            async healthCheck() {
+                try {
+                    await this.request('GET', '/health');
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+        }
+
+        // =============================================================================
+        // UI MANAGEMENT
+        // =============================================================================
+
+        const client = new NeurographiteClient();
+        
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active from all tabs
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                
+                // Add active to clicked tab
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Range input updates
+        document.getElementById('strength').addEventListener('input', (e) => {
+            document.getElementById('strength-value').textContent = e.target.value;
+        });
+
+        document.getElementById('activation-strength').addEventListener('input', (e) => {
+            document.getElementById('activation-value').textContent = e.target.value;
+        });
+
+        // =============================================================================
+        // API FUNCTIONS (GLOBAL SCOPE FOR ONCLICK HANDLERS)
+        // =============================================================================
+
+        window.addNode = async function() {
+            const name = document.getElementById('node-name').value;
+            const type = document.getElementById('node-type').value;
+            const description = document.getElementById('node-description').value;
+
+            if (!name.trim()) {
+                showMessage('Please enter a node name', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Creating node...', 'status');
+                
+                const nodeData = {
+                    name: name.trim(),
+                    type,
+                    description: description.trim(),
+                    created_at: new Date().toISOString()
+                };
+
+                const result = await client.addNode(nodeData, type);
+                
+                showMessage(`✅ Node created: ${result.node_id}`, 'success');
+                
+                // Clear form
+                document.getElementById('node-name').value = '';
+                document.getElementById('node-description').value = '';
+                
+                // Refresh stats
+                updateStats();
+
+            } catch (error) {
+                showMessage(`❌ Failed to create node: ${error.message}`, 'error');
+            }
+        };
+
+        window.connectNodes = async function() {
+            const nodeIdsStr = document.getElementById('connect-nodes').value;
+            const relationship = document.getElementById('relationship').value;
+            const strength = parseFloat(document.getElementById('strength').value);
+
+            if (!nodeIdsStr.trim() || !relationship.trim()) {
+                showMessage('Please enter node IDs and relationship', 'error');
+                return;
+            }
+
+            const nodeIds = nodeIdsStr.split(',').map(id => id.trim());
+            
+            if (nodeIds.length < 2) {
+                showMessage('Please provide at least 2 node IDs', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Creating connection...', 'status');
+                
+                const result = await client.connectNodes(nodeIds, relationship.trim(), strength);
+                
+                showMessage(`✅ Connection created: ${result.edge_id}`, 'success');
+                
+                // Clear form
+                document.getElementById('connect-nodes').value = '';
+                document.getElementById('relationship').value = '';
+                
+                // Refresh stats
+                updateStats();
+
+            } catch (error) {
+                showMessage(`❌ Failed to create connection: ${error.message}`, 'error');
+            }
+        };
+
+        window.findSimilar = async function() {
+            const nodeId = document.getElementById('query-node').value.trim();
+            
+            if (!nodeId) {
+                showMessage('Please enter a node ID', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Finding similar nodes...', 'status');
+                
+                const result = await client.findSimilar(nodeId);
+                
+                if (result.similar_nodes && result.similar_nodes.length > 0) {
+                    let message = `Found ${result.similar_nodes.length} similar nodes:\\n`;
+                    result.similar_nodes.forEach((node, i) => {
+                        message += `${i+1}. ${node.node_id} (${(node.similarity_score * 100).toFixed(1)}%)\\n`;
+                    });
+                    showMessage(message, 'success');
+                } else {
+                    showMessage('No similar nodes found', 'success');
+                }
+
+            } catch (error) {
+                showMessage(`❌ Failed to find similar nodes: ${error.message}`, 'error');
+            }
+        };
+
+        window.simulateNetworkEffect = async function() {
+            const nodeId = document.getElementById('query-node').value.trim();
+            
+            if (!nodeId) {
+                showMessage('Please enter a node ID', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Simulating network effect...', 'status');
+                
+                const result = await client.simulateNetworkEffect(nodeId);
+                
+                if (result.affected_nodes && result.affected_nodes.length > 0) {
+                    let message = `Network effect: ${result.affected_nodes.length} nodes affected\\n`;
+                    message += `Total effect: ${result.total_effect.toFixed(3)}\\n`;
+                    message += `Cascade depth: ${result.cascade_depth}\\n\\n`;
+                    
+                    result.affected_nodes.slice(0, 5).forEach((node, i) => {
+                        message += `${i+1}. ${node.node_id} (${(node.effect_strength * 100).toFixed(1)}%)\\n`;
+                    });
+                    
+                    if (result.affected_nodes.length > 5) {
+                        message += `... and ${result.affected_nodes.length - 5} more`;
+                    }
+                    
+                    showMessage(message, 'success');
+                } else {
+                    showMessage('No network effects detected', 'success');
+                }
+
+            } catch (error) {
+                showMessage(`❌ Failed to simulate network effect: ${error.message}`, 'error');
+            }
+        };
+
+        window.discoverRelationships = async function() {
+            try {
+                showMessage('Discovering optimal relationships...', 'status');
+                
+                const relationships = await client.discoverRelationships();
+                
+                if (relationships && relationships.length > 0) {
+                    let message = `🔍 Discovered ${relationships.length} potential relationships:\\n`;
+                    relationships.forEach((rel, i) => {
+                        message += `${i+1}. ${rel[0]} ↔ ${rel[1]} (score: ${rel[2].toFixed(3)})\\n`;
+                    });
+                    showMessage(message, 'success');
+                } else {
+                    showMessage('No new relationships discovered', 'success');
+                }
+
+            } catch (error) {
+                showMessage(`❌ Failed to discover relationships: ${error.message}`, 'error');
+            }
+        };
+
+        window.refreshNodes = async function() {
+            showMessage('Refreshing node list...', 'status');
+            // TODO: Implement when we have a list nodes endpoint
+            showMessage('Node list endpoint not yet implemented', 'error');
+        };
+
+        window.getStats = async function() {
+            try {
+                const stats = await client.getStats();
+                
+                // Update UI stats
+                document.getElementById('node-count').textContent = stats.node_count || 0;
+                document.getElementById('edge-count').textContent = stats.edge_count || 0;
+                document.getElementById('active-neurons').textContent = stats.active_neurons || 0;
+                
+                showMessage(`📊 Stats updated: ${stats.node_count} nodes, ${stats.edge_count} edges, ${stats.active_neurons} active neurons`, 'success');
+                
+            } catch (error) {
+                showMessage(`❌ Failed to get stats: ${error.message}`, 'error');
+            }
+        };
+
+        // =============================================================================
+        // UI HELPERS
+        // =============================================================================
+
+        function showMessage(text, type = 'status') {
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.textContent = text;
+            
+            // Set color based on type
+            switch (type) {
+                case 'error':
+                    statusDiv.style.color = '#f84';
+                    statusDiv.style.background = 'rgba(255, 68, 68, 0.1)';
+                    break;
+                case 'success':
+                    statusDiv.style.color = '#4f8';
+                    statusDiv.style.background = 'rgba(68, 255, 68, 0.1)';
+                    break;
+                default:
+                    statusDiv.style.color = '#6a9';
+                    statusDiv.style.background = 'rgba(10, 25, 40, 0.7)';
+            }
+
+            // Auto-clear success/error messages
+            if (type === 'error' || type === 'success') {
+                setTimeout(() => {
+                    statusDiv.textContent = 'Ready';
+                    statusDiv.style.color = '#6a9';
+                    statusDiv.style.background = 'rgba(10, 25, 40, 0.7)';
+                }, 5000);
+            }
+        }
+
+        async function updateStats() {
+            try {
+                await window.getStats();
+            } catch (error) {
+                console.warn('Failed to update stats:', error);
+            }
+        }
+
+        async function checkConnection() {
+            const statusDot = document.getElementById('connection-status');
+            const endpointUrl = document.getElementById('endpoint-url');
+            
+            try {
+                const isHealthy = await client.healthCheck();
+                
+                if (isHealthy) {
+                    statusDot.classList.add('connected');
+                    endpointUrl.textContent = client.baseUrl;
+                    endpointUrl.style.color = '#4f4';
+                } else {
+                    statusDot.classList.remove('connected');
+                    endpointUrl.textContent = client.baseUrl + ' (disconnected)';
+                    endpointUrl.style.color = '#f44';
+                }
+            } catch (error) {
+                statusDot.classList.remove('connected');
+                endpointUrl.textContent = client.baseUrl + ' (error)';
+                endpointUrl.style.color = '#f44';
+            }
+        }
+
+        // =============================================================================
+        // INITIALIZATION
+        // =============================================================================
+
+        // Check connection on load
+        checkConnection();
+        updateStats();
+
+        // Periodic connection check
+        setInterval(checkConnection, 10000);
+        setInterval(updateStats, 30000);
+
+        // Initial demo message
+        setTimeout(() => {
+            showMessage('🧠 Connected to Neurographite backend. Try adding a node or getting stats!', 'success');
+        }, 1000);
+
+    </script>
+</body>
+</html>

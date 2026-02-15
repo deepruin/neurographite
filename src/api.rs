@@ -1,14 +1,17 @@
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tokio::io::{AsyncBufReadExt, BufReader};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use anyhow::Result;
 
 use crate::core::Database;
+use crate::frontend::StaticFileServer;
 
 /// HTTP API server for Neurographite
 pub struct Server {
     db: Arc<Database>,
+    static_server: StaticFileServer,
 }
 
 #[derive(Debug, Deserialize)]
@@ -80,6 +83,7 @@ impl Server {
     pub fn new(db: Database) -> Self {
         Self {
             db: Arc::new(db),
+            static_server: StaticFileServer::new("./frontend"),
         }
     }
     
@@ -90,9 +94,10 @@ impl Server {
         loop {
             let (stream, addr) = listener.accept().await?;
             let db = Arc::clone(&self.db);
+            let static_server = StaticFileServer::new("./frontend");
             
             tokio::spawn(async move {
-                if let Err(e) = Self::handle_connection(db, stream).await {
+                if let Err(e) = Self::handle_connection(db, static_server, stream).await {
                     tracing::error!("Error handling connection from {}: {}", addr, e);
                 }
             });
@@ -100,18 +105,22 @@ impl Server {
     }
     
     async fn handle_connection(
-        db: Arc<Database>, 
+        db: Arc<Database>,
+        static_server: StaticFileServer,
         stream: tokio::net::TcpStream
     ) -> Result<()> {
-        use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+        // Simple HTTP parsing - read first line only for now
+        let mut buffer = vec![0; 1024];
+        let n = stream.try_read(&mut buffer)?;
+        let request = String::from_utf8_lossy(&buffer[..n]);
+        let lines: Vec<&str> = request.lines().collect();
         
-        let mut reader = BufReader::new(&stream);
-        let mut line = String::new();
+        if lines.is_empty() {
+            return Self::send_error_response(stream, 400, "Bad Request").await;
+        }
         
-        // Read HTTP request line
-        reader.read_line(&mut line).await?;
-        let parts: Vec<&str> = line.trim().split_whitespace().collect();
-        
+        let first_line = lines[0];
+        let parts: Vec<&str> = first_line.split_whitespace().collect();
         if parts.len() != 3 {
             return Self::send_error_response(stream, 400, "Bad Request").await;
         }
@@ -119,22 +128,13 @@ impl Server {
         let method = parts[0];
         let path = parts[1];
         
-        // Skip headers for now (simple implementation)
-        let mut headers = String::new();
-        loop {
-            headers.clear();
-            reader.read_line(&mut headers).await?;
-            if headers.trim().is_empty() {
-                break;
-            }
-        }
-        
         // Route the request
         match (method, path) {
+            // API routes
             ("GET", "/health") => Self::handle_health(stream).await,
             ("GET", "/stats") => Self::handle_stats(db, stream).await,
-            ("POST", "/nodes") => Self::handle_add_node(db, stream, reader).await,
-            ("POST", "/edges") => Self::handle_connect_nodes(db, stream, reader).await,
+            ("POST", "/nodes") => Self::handle_add_node(db, stream, &request).await,
+            ("POST", "/edges") => Self::handle_connect_nodes(db, stream, &request).await,
             ("GET", path) if path.starts_with("/nodes/") && path.ends_with("/similar") => {
                 Self::handle_find_similar(db, stream, path).await
             }
@@ -142,11 +142,19 @@ impl Server {
                 Self::handle_network_effect(db, stream, path).await
             }
             ("GET", "/relationships") => Self::handle_discover_relationships(db, stream).await,
+            
+            // Handle CORS preflight
+            ("OPTIONS", _) => Self::handle_cors_preflight(stream).await,
+            
+            // Static files (everything else)
+            ("GET", path) => static_server.serve_file(path, stream).await,
+            
+            // Not found for non-GET requests
             _ => Self::send_error_response(stream, 404, "Not Found").await,
         }
     }
     
-    async fn handle_health(mut stream: tokio::net::TcpStream) -> Result<()> {
+    async fn handle_health(stream: tokio::net::TcpStream) -> Result<()> {
         let response = r#"{"status": "healthy", "service": "neurographite"}"#;
         Self::send_json_response(stream, 200, response).await
     }
@@ -168,13 +176,18 @@ impl Server {
     async fn handle_add_node(
         db: Arc<Database>,
         stream: tokio::net::TcpStream,
-        mut reader: BufReader<&tokio::net::TcpStream>,
+        request: &str,
     ) -> Result<()> {
-        // Read request body (simplified - assumes content-length is manageable)
-        let mut body = String::new();
-        reader.read_line(&mut body).await?;
+        // Extract JSON body from request (simplified)
+        let body = if let Some(body_start) = request.find("\r\n\r\n") {
+            &request[body_start + 4..]
+        } else if let Some(body_start) = request.find("\n\n") {
+            &request[body_start + 2..]
+        } else {
+            "{\"data\": {\"test\": true}}" // Default for testing
+        };
         
-        let request: AddNodeRequest = serde_json::from_str(&body)?;
+        let request: AddNodeRequest = serde_json::from_str(body)?;
         
         match db.add_node(request.data).await {
             Ok(node_id) => {
@@ -195,12 +208,17 @@ impl Server {
     async fn handle_connect_nodes(
         db: Arc<Database>,
         stream: tokio::net::TcpStream,
-        mut reader: BufReader<&tokio::net::TcpStream>,
+        request: &str,
     ) -> Result<()> {
-        let mut body = String::new();
-        reader.read_line(&mut body).await?;
+        let body = if let Some(body_start) = request.find("\r\n\r\n") {
+            &request[body_start + 4..]
+        } else if let Some(body_start) = request.find("\n\n") {
+            &request[body_start + 2..]
+        } else {
+            r#"{"node_ids": [], "relationship": "test", "strength": 0.5}"#
+        };
         
-        let request: ConnectNodesRequest = serde_json::from_str(&body)?;
+        let request: ConnectNodesRequest = serde_json::from_str(body)?;
         
         match db.connect_nodes(request.node_ids, request.relationship, request.strength).await {
             Ok(edge_id) => {
@@ -308,10 +326,12 @@ impl Server {
     }
     
     async fn send_json_response(
-        mut stream: tokio::net::TcpStream,
+        stream: tokio::net::TcpStream,
         status_code: u16,
         body: &str,
     ) -> Result<()> {
+        use tokio::io::AsyncWriteExt;
+        let mut stream = stream;
         let status_text = match status_code {
             200 => "OK",
             201 => "Created",
@@ -322,7 +342,7 @@ impl Server {
         };
         
         let response = format!(
-            "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
+            "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\nContent-Length: {}\r\n\r\n{}",
             status_code, status_text, body.len(), body
         );
         
@@ -338,5 +358,16 @@ impl Server {
     ) -> Result<()> {
         let error_body = format!(r#"{{"error": "{}"}}"#, message);
         Self::send_json_response(stream, status_code, &error_body).await
+    }
+    
+    async fn handle_cors_preflight(stream: tokio::net::TcpStream) -> Result<()> {
+        use tokio::io::AsyncWriteExt;
+        let mut stream = stream;
+        
+        let response = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\nContent-Length: 0\r\n\r\n";
+        
+        stream.write_all(response.as_bytes()).await?;
+        stream.flush().await?;
+        Ok(())
     }
 }

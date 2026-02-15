@@ -88,7 +88,7 @@ impl NetworkAnalyzer {
             for neighbor in neighbors {
                 if !visited.contains(&neighbor.id) {
                     let edges = graph.get_node_edges(&current_node);
-                    let mut propagated_strength = 0.0;
+                    let mut propagated_strength: f64 = 0.0;
                     
                     // Calculate propagation strength based on edge properties
                     for edge in edges {

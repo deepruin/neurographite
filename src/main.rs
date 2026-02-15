@@ -4,6 +4,7 @@ mod neural;
 mod storage;
 mod network;
 mod api;
+mod frontend;
 
 use std::error::Error;
 use tracing::{info, Level};

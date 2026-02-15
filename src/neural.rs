@@ -5,7 +5,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc, Duration};
 
 use crate::core::DatabaseConfig;
-use crate::hypergraph::{HyperGraph, HyperNode, HyperEdge};
+use crate::hypergraph::HyperGraph;
 
 /// Neuromorphic spike processing engine
 /// 
@@ -125,7 +125,7 @@ impl SpikeProcessor {
         let target_activation = state.activations.get(&target_node).unwrap_or(&0.0);
         let target_neighbors = graph.get_neighbors(&target_node);
         
-        for (node_id, node) in graph.nodes() {
+        for (node_id, _node) in graph.nodes() {
             if *node_id == target_node {
                 continue;
             }
@@ -189,8 +189,8 @@ impl SpikeProcessor {
         // TODO: Implement full Gale-Shapley algorithm for optimal matching
         for i in 0..active_nodes.len() {
             for j in (i+1)..active_nodes.len() {
-                let (node1, activation1) = active_nodes[i];
-                let (node2, activation2) = active_nodes[j];
+                let (node1, _activation1) = active_nodes[i];
+                let (node2, _activation2) = active_nodes[j];
                 
                 // Calculate complementarity score
                 let complementarity = self.calculate_complementarity(graph, &state, node1, node2).await?;
@@ -240,7 +240,7 @@ impl SpikeProcessor {
                 if !visited.contains(&neighbor.id) {
                     // Calculate propagated activation based on edge strength
                     let edges = graph.get_node_edges(&current_node);
-                    let mut max_conductance = 0.0;
+                    let mut max_conductance: f64 = 0.0;
                     
                     for edge in edges {
                         if edge.node_ids.contains(&neighbor.id) {
@@ -358,8 +358,8 @@ impl SpikeProcessor {
         node2: Uuid,
     ) -> Result<f64> {
         // Get node data to analyze goal complementarity
-        let node1_data = graph.get_node(&node1).ok_or_else(|| anyhow::anyhow!("Node not found"))?;
-        let node2_data = graph.get_node(&node2).ok_or_else(|| anyhow::anyhow!("Node not found"))?;
+        let _node1_data = graph.get_node(&node1).ok_or_else(|| anyhow::anyhow!("Node not found"))?;
+        let _node2_data = graph.get_node(&node2).ok_or_else(|| anyhow::anyhow!("Node not found"))?;
         
         // Calculate complementarity based on:
         // 1. Different but compatible activation levels
