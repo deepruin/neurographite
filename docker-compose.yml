@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  neurographite:
+    build: .
+    container_name: neurographite
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persistent data storage
+      - neurographite-data:/app/data
+      # Optional: mount custom config
+      # - ./config:/app/config:ro
+    environment:
+      - RUST_LOG=info
+      - NEUROGRAPHITE_HOST=0.0.0.0
+      - NEUROGRAPHITE_PORT=8080
+      - NEUROGRAPHITE_DATA_DIR=/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Optional: Add Redis for caching if needed in the future
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: neurographite-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+
+volumes:
+  neurographite-data:
+    driver: local
+  # redis-data:
+  #   driver: local

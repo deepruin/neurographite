@@ -49,22 +49,37 @@ Neurographite combines hypergraph data structures with neuromorphic computing pr
 
 ## 🛠️ Installation
 
-### Prerequisites
-- Rust 1.93.1+ (2021 edition)
-- Git
+### 🐳 Docker (Recommended)
+```bash
+git clone https://github.com/deepruin/neurographite.git
+cd neurographite
 
-### Build from Source
+# Quick start with Docker Compose
+docker-compose up -d
+
+# Or build and run manually
+./build-docker.sh
+docker run -p 8080:8080 deepruin/neurographite:latest
+```
+
+### 📦 From Source
+**Prerequisites:** Rust 1.93.1+ (2021 edition), Git
+
 ```bash
 git clone https://github.com/deepruin/neurographite.git
 cd neurographite
 cargo build --release
-```
-
-### Run Server
-```bash
 cargo run
 # Server starts on http://127.0.0.1:8080
 ```
+
+### ☁️ Production Deployment
+See [DOCKER.md](DOCKER.md) for complete deployment guide including:
+- Docker Compose production setup
+- Kubernetes manifests
+- Docker Swarm configuration  
+- Security hardening
+- Monitoring and troubleshooting
 
 ## 🔌 API Usage
 
